@@ -31,6 +31,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 
 abstract class MethodProxyHandler<T>(protected open val klass: Class<T>) : InvocationHandler {
+
     /**
      * isSync is true, if the last method was called with a synchronous syntax
      */

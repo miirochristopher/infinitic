@@ -87,6 +87,10 @@ interface WorkflowA : ParentInterface {
     fun prop5(): String
     fun prop6(): String
     fun prop7(): String
+    fun async1(): String
+    fun async2(): String
+    fun async3(): String
+    fun async4(): String
     fun channel1(): String
     fun channel2(): Any
     fun channel3(): Any
@@ -435,6 +439,56 @@ class WorkflowAImpl : Workflow(), WorkflowA {
 
         return p1 // should be "acbd"
     }
+
+    override fun async1(): String {
+        p1 = "a"
+        val d1 = async { p1 = "${p1}b" }
+        val d2 = async { p1 = "${p1}c" }
+        (d1 and d2).await()
+
+        return p1 // should be "abc"
+    }
+
+    override fun async2(): String {
+        p1 = "a"
+        val d1 = async {
+            val d1 = async { p1 = "${p1}b" }
+            val d2 = async { p1 = "${p1}c" }
+            (d1 and d2).await()
+        }
+        val d2 = async {
+            val d1 = async { p1 = "${p1}d" }
+            val d2 = async { p1 = "${p1}e" }
+            (d1 and d2).await()
+        }
+        (d1 and d2).await()
+
+        return p1 // should be "abc"
+    }
+
+    override fun async3(): String {
+        var s: String = "a"
+
+        val d1 = async { s = "${s}b" }
+        val d2 = async { s = "${s}c" }
+
+        (d1 and d2).await()
+
+        return s // should be "abc"
+    }
+
+    override fun async4(): String {
+        var s = "a"
+
+//        val d1 = dispatch(this::branchConcat)(s, "b")
+//        val d2 = dispatch(this::branchConcat)(s, "c")
+//
+//        (d1 and d2).await()
+
+        return s // should be "a"
+    }
+
+    private fun branchConcat(s: String, c: String): String = "${s}$c"
 
     override fun channel1(): String {
         val deferred: Deferred<String> = channelA.receive()

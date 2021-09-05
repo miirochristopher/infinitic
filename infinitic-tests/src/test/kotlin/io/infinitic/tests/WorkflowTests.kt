@@ -526,6 +526,14 @@ internal class WorkflowTests : StringSpec({
         client.getWorkflowIds<WorkflowA>("foo").contains(deferred.id) shouldBe false
     }
 
+    "async should be processed in order" {
+        workflowA.async1() shouldBe "abc"
+    }
+
+    "nested async should be processed in order" {
+        workflowA.async2() shouldBe "abcde"
+    }
+
     "Annotated Workflow" {
         val result = workflowAnnotated.foo("")
 

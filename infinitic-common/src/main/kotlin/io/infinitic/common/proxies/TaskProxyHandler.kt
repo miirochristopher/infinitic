@@ -32,6 +32,7 @@ import io.infinitic.common.tasks.data.TaskOptions
 import io.infinitic.common.tasks.data.TaskTag
 import io.infinitic.exceptions.clients.MultipleMethodCallsException
 import io.infinitic.exceptions.clients.NoMethodCallException
+import io.infinitic.exceptions.thisShouldNotHappen
 import java.lang.reflect.Method
 
 class TaskProxyHandler<T : Any>(
@@ -43,6 +44,11 @@ class TaskProxyHandler<T : Any>(
     var perTag: TaskTag? = null,
     private val dispatcherFn: () -> Dispatcher
 ) : MethodProxyHandler<T>(klass) {
+
+    companion object {
+        @JvmStatic val invocationType: ThreadLocal<ProxyInvokeType> = ThreadLocal.withInitial { ProxyInvokeType.DISPATCH_SYNC }
+        @JvmStatic val invocationHandler: ThreadLocal<MethodProxyHandler<*>?> = ThreadLocal()
+    }
 
     val taskName = TaskName(className)
 
@@ -68,9 +74,18 @@ class TaskProxyHandler<T : Any>(
 
         if (method.declaringClass == Object::class.java) return any
 
-        return when (isSync) {
-            true -> dispatcherFn().dispatchAndWait(this)
-            false -> any
+        return when (invocationType.get()!!) {
+            ProxyInvokeType.DISPATCH_SYNC -> {
+                dispatcherFn().dispatchAndWait(this)
+            }
+            ProxyInvokeType.DISPATCH_ASYNC -> {
+                // set handler. Should be reset once caught.
+                invocationHandler.set(this)
+                // restore sync value
+                invocationType.set(ProxyInvokeType.DISPATCH_SYNC)
+
+                any
+            }
         }
     }
 

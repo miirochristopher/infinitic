@@ -77,6 +77,9 @@ import java.lang.reflect.Proxy
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import kotlin.reflect.KFunction0
+import kotlin.reflect.KFunction1
+import kotlin.reflect.jvm.javaMethod
 
 @Suppress("MemberVisibilityCanBePrivate", "unused")
 abstract class InfiniticClient : Closeable {
@@ -254,6 +257,16 @@ abstract class InfiniticClient : Closeable {
             is SendChannelProxyHandler<*> -> throw CanNotApplyOnChannelException("cancel")
             else -> thisShouldNotHappen("unknown handle type ${handler::class}")
         }
+    }
+
+    fun <T> dispatch(method: KFunction0<T>) : () -> T {
+        val m = method.javaMethod!!.declaringClass
+        return { method() }
+    }
+
+    fun <S, T> dispatch(method: KFunction1<S, T>) : (S) -> T {
+        val m = method.javaMethod!!.declaringClass
+        return { s: S -> method(s) }
     }
 
     /**
